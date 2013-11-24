@@ -69,7 +69,7 @@ Viewport viewport;
 parsedScene Scene;
 vector<vector<Color> > imageBuffer;
 
-double cosval = 0;
+float cosval = 0;
 bool flagDrawToScreen = false;
 bool flagDrawToFile = false;
 bool flagAABB = false; 
@@ -98,16 +98,17 @@ Color AABBtrace(Ray ray, int depth, Color baseColor){
     if (depth > Scene.reflectiondepth){
         return Color(0, 0, 0);
     }
-
-
-    Point inter = Point(0, 0, 0);  //ray from camera intersects a shape at this point
-    Shape* intershape = NULL; //which shape is intersected. note you can't instantiate abstract class
-    //if(!Scene.shapes.checkIntersect(ray, &inter, intershape, LARGE_NUM)) //camera ray hits nothing, return background
-    if(!Scene.root.CollisionTest(ray, &inter, intershape, LARGE_NUM))
+    float large = LARGE_NUM; 
+    Triangle* intertri = new Triangle(); 
+    float t = Scene.root.CollisionTest(ray, intertri, &large); 
+    if(t == 0 || t == NO_INTERSECTION)
         return Color(0, 0, 0);   
           
-    BRDF brdf = intershape->brdf; 
-    Vector N = intershape->getNormal(inter); 
+    Point inter = Point(ray.origin.x + t * ray.direction.dx, 
+				ray.origin.y + t * ray.direction.dy,
+				ray.origin.z + t * ray.direction.dz);       
+    BRDF brdf = intertri->brdf; 
+    Vector N = intertri->getNormal(inter); 
     for(int i = 0; i < Scene.lights.size(); i++){
         Ray lightray, L;
         if(Scene.lights[i].directional) {
@@ -118,7 +119,7 @@ Color AABBtrace(Ray ray, int depth, Color baseColor){
              
 		}
 		
-		double dist = sqrt(pow(Scene.lights[i].source.x - inter.x, 2) + 
+		float dist = sqrt(pow(Scene.lights[i].source.x - inter.x, 2) + 
 						pow(Scene.lights[i].source.y - inter.y, 2) + 
 						pow(Scene.lights[i].source.z - inter.z, 2));
 		
@@ -126,10 +127,10 @@ Color AABBtrace(Ray ray, int depth, Color baseColor){
         Point bias = inter + lightray.direction * 0.001; //take into account shadow bias
         L = Ray(bias, lightray.direction); 
         //if(!Scene.shapes.checkIntersect(L, dist)){ //light ray for this light is not blocked by any shapes. 
-         if(!Scene.root.CollisionTest(L, dist)){
+         if(!Scene.root.CollisionTest(L, &dist)){
             Vector R = getReflection(L.direction, N); 
-            baseColor += brdf.kd * Scene.lights[i].color * max(0.0, L.direction.dotProduct(N)); 
-            baseColor += brdf.ks * Scene.lights[i].color * pow(max(0.0, R.dotProduct(Vector(inter, ray.origin).normalize())), brdf.sp); 
+            baseColor += brdf.kd * Scene.lights[i].color * max((float)0.0, L.direction.dotProduct(N)); 
+            baseColor += brdf.ks * Scene.lights[i].color * pow(max((float)0.0, R.dotProduct(Vector(inter, ray.origin).normalize())), brdf.sp); 
         } 
     }
     
@@ -137,10 +138,8 @@ Color AABBtrace(Ray ray, int depth, Color baseColor){
     baseColor += brdf.ke; // the emission of this object
 
     baseColor += Scene.ambient; // the overal ambient glow of the scene.
-    
 
-    //if (brdf.kr > 0){
-    if (brdf.ks.r > 0 || brdf.ks.g > 0 || brdf.ks.b > 0){
+   if (brdf.ks.r > 0 || brdf.ks.g > 0 || brdf.ks.b > 0){
 		Vector reflectDir = getReflection(ray.direction, N).negative();
 		Ray reflectedRay = Ray(inter + reflectDir * 0.1, reflectDir); //bias
 		baseColor += AABBtrace(reflectedRay, depth + 1, baseColor) * brdf.ks; 
@@ -175,7 +174,7 @@ Color trace(Ray ray, int depth, Color baseColor){
              
 		}
 		
-		double dist = sqrt(pow(Scene.lights[i].source.x - inter.x, 2) + 
+		float dist = sqrt(pow(Scene.lights[i].source.x - inter.x, 2) + 
 						pow(Scene.lights[i].source.y - inter.y, 2) + 
 						pow(Scene.lights[i].source.z - inter.z, 2));
 		
@@ -184,8 +183,8 @@ Color trace(Ray ray, int depth, Color baseColor){
         L = Ray(bias, lightray.direction); 
         if(!Scene.shapes.checkIntersect(L, dist)){ //light ray for this light is not blocked by any shapes. 
             Vector R = getReflection(L.direction, N); 
-            baseColor += brdf.kd * Scene.lights[i].color * max(0.0, L.direction.dotProduct(N)); 
-            baseColor += brdf.ks * Scene.lights[i].color * pow(max(0.0, R.dotProduct(Vector(inter, ray.origin).normalize())), brdf.sp); 
+            baseColor += brdf.kd * Scene.lights[i].color * max((float)0.0, L.direction.dotProduct(N)); 
+            baseColor += brdf.ks * Scene.lights[i].color * pow(max((float)0.0, R.dotProduct(Vector(inter, ray.origin).normalize())), brdf.sp); 
         } 
     }
     
@@ -220,10 +219,10 @@ void drawScreen() {
 
     up_dir = right_dir.crossProduct(look_vector);
     
-    double fov = Scene.fov * PI / 180.0;
-    double rat = (double(Scene.width)/double(Scene.height));
-    double iph = tan(fov/2);
-    double ipw = tan(fov/2);
+    float fov = Scene.fov * PI / 180.0;
+    float rat = (float(Scene.width)/float(Scene.height));
+    float iph = tan(fov/2);
+    float ipw = tan(fov/2);
    
     Vector uv = up_dir*iph;
     Vector rv = right_dir*ipw*rat;
@@ -242,12 +241,12 @@ void drawScreen() {
     Color c; 
     
         int x, y;
-        double u, v; 
+        float u, v; 
 #pragma omp parallel for private(x,y,u,v, point, point1, point2, ray, c)
         for (x = 0; x<Scene.width ; x += 1) {
             for (y = 0; y<Scene.height; y += 1) {
-                u = double(x)/Scene.width;
-                v = double(y)/Scene.height;
+                u = float(x)/Scene.width;
+                v = float(y)/Scene.height;
                 
                 point1 = (LL*v) + (UL*(1-v));
                 point1 = point1 * u;
@@ -302,7 +301,7 @@ void myDisplay() {
 	glEnd(); 
 
 	glFlush();
-	glutSwapBuffers();					// swap buffers (we earlier set double buffer)
+	glutSwapBuffers();					// swap buffers (we earlier set float buffer)
 	
 	
 }
@@ -344,16 +343,45 @@ int main(int argc, char *argv[]) {
             cout << " ---NOT using AABB" << endl;
 		
 		imageBuffer = vector<vector<Color> >(Scene.width, vector<Color>(Scene.height, Color(0,0,0)));
-	        double time = 0.0;
-		time = timestamp();
+		double time = timestamp();
 		drawScreen(); // the main computation hog
 		printf("Time %f", timestamp() - time);
 		
+         if (flagDrawToFile) {
+                        cout << endl << endl << "::: To img.png File :::" << endl;
+                        
+                        
+                        std::vector<unsigned char> img;
+                        img.resize(Scene.width * Scene.height * 4);
+                        for(unsigned y = 0; y < Scene.height; y++)
+                                for(unsigned x = 0; x < Scene.width; x++) {
+                                        img[4 * Scene.width * y + 4 * x + 0] = min(255, int(imageBuffer[x][Scene.height - y - 1].r * 255));
+                                        img[4 * Scene.width * y + 4 * x + 1] = min(255, int(imageBuffer[x][Scene.height - y - 1].g * 255));
+                                        img[4 * Scene.width * y + 4 * x + 2] = min(255, int(imageBuffer[x][Scene.height - y - 1].b * 255));
+                                        img[4 * Scene.width * y + 4 * x + 3] = 255;
+                        }
+                        
+                        //unsigned error = lodepng::encode(/*Scene.outputFileName*/ "img.png", img, Scene.width, Scene.height);
+                        std::string fileName = Scene.outputFileName; 
+                        if(flagAABB) fileName += "AABB.png"; 
+                        else fileName += "normal.png"; 
+                        unsigned error = lodepng::encode(fileName, img, Scene.width, Scene.height);
+                    //if there's an error, display it
+                    if(error) {
+                                cout << "!!! lodepng: encoder error " << error << ": "<< lodepng_error_text(error) << endl;
+                        } else {
+                                cout << "    " <<  fileName << " file successfully written." << endl;
+                                //cout << "    " <<  "img.png " << " file successfully written." << endl;
+                        }
+                        
+                        
+                }
+        
 		if (flagDrawToScreen){
 			cout << endl << endl << "::: To Screen :::" << endl << endl;
 			glutInit(&argc, argv);
 
-			//This tells glut to use a double-buffered window with red, green, and blue channels 
+			//This tells glut to use a float-buffered window with red, green, and blue channels 
 			glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
 
 			// Initalize theviewport size

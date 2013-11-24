@@ -6,6 +6,7 @@
 #include <iostream>
 #include <math.h>
 #include <vector>
+#include <cfloat>
 #include "primitives.h"
 
 #define X_AXIS 0
@@ -13,6 +14,7 @@
 #define Z_AXIS 2
 
 #define LARGE_NUM 1000000
+#define NO_INTERSECTION FLT_MAX
 
 class BRDF{
     public:
@@ -31,7 +33,7 @@ class BoundingBox{
     float min_y, max_y;
     float min_z, max_z; 
     
-    BoundingBox(){};
+    BoundingBox(); 
     BoundingBox(float, float, float, float, float, float); 
     
     int getLongestAxis(); 
@@ -43,7 +45,7 @@ class BoundingBox{
 class Shape{
   public:   
     BRDF brdf;
-    virtual bool getIntersect(Ray, double*) = 0; 
+    virtual bool getIntersect(Ray, float*) = 0; 
     virtual bool getIntersect(Ray) = 0; 
     virtual Vector getNormal(Point) = 0; 
     virtual BoundingBox getBB() = 0; 
@@ -56,25 +58,42 @@ class Shape{
 class ShapeList{ //see AggregatePrimitive on website 
     public:
         vector<Shape*> allShapes; 
-        bool checkIntersect(Ray, Point*, Shape*&, double);
-        bool checkIntersect(Ray, double);
+        bool checkIntersect(Ray, Point*, Shape*&, float);
+        bool checkIntersect(Ray, float);
         
         BoundingBox getRootBox(); 
         
-        ShapeList() {}; 
+        ShapeList(); 
         ShapeList(vector<Shape*>); 
+};
+
+
+class Triangle: public Shape{
+    public:
+        vector<Point> vertices; 
+        Point v1, v2, v3; 
+        Matrix RtimesSinv;
+    
+        Triangle() {};
+        Triangle(Point, Point, Point, Matrix); 
+        
+        bool getIntersect(Ray, float*); 
+        bool getIntersect(Ray); 
+        Vector getNormal(Point); //no need for Point b/c all normals are same on triangle
+        BoundingBox getBB(); 
+
 };
 
 class AABB_Node{
   public:
         BoundingBox bb;
         AABB_Node* children[2];  
-        ShapeList containedShapes; 
+        vector<Triangle> containedTriangles; 
         
         AABB_Node(){}; 
-        AABB_Node(ShapeList, int); 
-        bool CollisionTest(Ray, Point*, Shape*&, float); 
-         bool CollisionTest(Ray, float); 
+        AABB_Node(vector<Triangle>*, int); 
+        float CollisionTest(Ray, Triangle*, float*); 
+        bool CollisionTest(Ray, float*); 
 };
 
 
@@ -96,7 +115,7 @@ class Sphere: public Shape{
         
         
   
-        bool getIntersect(Ray, double*); 
+        bool getIntersect(Ray, float*); 
         bool getIntersect(Ray); 
         Vector getNormal(Point); 
         BoundingBox getBB(); 
@@ -107,21 +126,6 @@ class Sphere: public Shape{
 };
 
 
-class Triangle: public Shape{
-    public:
-        vector<Point> vertices; 
-        Point v1, v2, v3; 
-        Matrix RtimesSinv;
-    
-        Triangle() {};
-        Triangle(Point, Point, Point, Matrix); 
-        
-        bool getIntersect(Ray, double*); 
-        bool getIntersect(Ray); 
-        Vector getNormal(Point); //no need for Point b/c all normals are same on triangle
-        BoundingBox getBB(); 
-
-};
 
 
 

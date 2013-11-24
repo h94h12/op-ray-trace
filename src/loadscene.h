@@ -26,6 +26,7 @@ class parsedScene{
         std::string outputFileName;
         
         ShapeList shapes;
+        vector<Triangle> triangles; 
         vector<Light> lights;
         
           AABB_Node root; 

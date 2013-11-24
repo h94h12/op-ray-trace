@@ -30,13 +30,13 @@ class Vector;
 class Point{ 
 public:
     Point() {};
-    Point(double, double, double); 
+    Point(float, float, float); 
 
-    double x, y, z;
+    float x, y, z;
     Vector subtract(Point); 
     Point operator + (Vector); //position + direction = position 
     Point operator + (Point); // point addition; shortcut for camera's ray formula
-    Point operator * (double); 
+    Point operator * (float); 
     Vector operator - (Point);  
     
     
@@ -48,20 +48,20 @@ public:
 class Vector{
  public:
     Vector() {};  
-    Vector(double, double, double);
+    Vector(float, float, float);
     Vector(Point); 
     Vector(Point, Point); 
     
-    double dx, dy, dz;
-    double mag;
+    float dx, dy, dz;
+    float mag;
     
     Vector normalize();
-    double dotProduct(Vector);
+    float dotProduct(Vector);
     Vector negative();
     Vector crossProduct(Vector);
     
     //allow for scalar * and vector +
-    Vector operator * (double);
+    Vector operator * (float);
     Vector operator + (Vector); 
     Vector operator - (Vector); 
     
@@ -74,7 +74,7 @@ class Vector{
 class Ray{
 public:
     Ray() {}; 
-    Ray(double, double, double, double, double, double);
+    Ray(float, float, float, float, float, float);
     Ray(Point, Point); 
     Ray(Point, Vector);
 
@@ -91,13 +91,13 @@ public:
  class Color{
      public:
         Color() {};
-        Color(double, double, double);
+        Color(float, float, float);
         
-        double r, g, b;
+        float r, g, b;
         
         Color operator + (Color);  
         Color operator * (Color); 
-        Color operator * (double); 
+        Color operator * (float); 
         void operator += (Color); 
         
         Color clone();
@@ -110,24 +110,24 @@ public:
 class Light {
   public:
     Light() {}; 
-    Light (double, double, double, double, double, double, bool); 
+    Light (float, float, float, float, float, float, bool); 
 
-    void initPos(double, double, double);
-    void initRGB(double, double, double); 
+    void initPos(float, float, float);
+    void initRGB(float, float, float); 
     Color color; 
     Point source; 
-    double x, y, z, r, g, b;
+    float x, y, z, r, g, b;
 	bool directional;
 
 };
 
 class Matrix{
     public:
-        vector<vector<double> > m; 
+        vector<vector<float> > m; 
     Matrix();
     
     // Instantiator shortcut for translation, scaling, or rotating (depends upon input char)
-    Matrix(char, double, double, double, double); 
+    Matrix(char, float, float, float, float); 
     
     Matrix operator * (Matrix); 
     Point operator * (Point);

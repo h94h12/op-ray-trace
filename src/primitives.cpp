@@ -11,14 +11,14 @@
 
 
 //Constructor
-Point::Point(double nx, double ny, double nz) {
+Point::Point(float nx, float ny, float nz) {
 		x = nx;
 		y = ny;
 		z = nz;
 }
 
 //Constructor
-Vector::Vector(double nx, double ny, double nz){
+Vector::Vector(float nx, float ny, float nz){
         dx = nx;
         dy =  ny; 
         dz = nz; 
@@ -43,7 +43,7 @@ Vector::Vector(Point p1, Point p2){
 
 
 //Construct ray given starting coordinates and end coordinates
-Ray:: Ray(double nx, double ny, double nz, double ndx, double ndy, double ndz) {
+Ray:: Ray(float nx, float ny, float nz, float ndx, float ndy, float ndz) {
 		origin = Point (nx, ny, nz);
         direction = Vector(ndx, ndy, ndz).normalize();
 }
@@ -71,7 +71,7 @@ Ray:: Ray(Point startingPoint, Point newPoint) {
 
 
 //Construct a Color
- Color::Color(double red, double green, double blue){
+ Color::Color(float red, float green, float blue){
   
     r = red;
     g = green;
@@ -83,7 +83,7 @@ Ray:: Ray(Point startingPoint, Point newPoint) {
  
  
  //Light constructors
-Light::Light(double xp, double yp, double zp, double red, double green, double blue, bool dir){
+Light::Light(float xp, float yp, float zp, float red, float green, float blue, bool dir){
     x = xp;
     y = yp;
     z = zp; 
@@ -124,7 +124,7 @@ Point Point::operator+ (Point p){
     return Point(x + p.x, y + p.y, z + p.z); 
 }
 
-Point Point::operator* (double s){
+Point Point::operator* (float s){
     return Point(x*s, y*s, z*s); 
 }
 
@@ -136,11 +136,11 @@ Point Point::operator* (double s){
 
 //normalize this vector
 Vector Vector::normalize(){
-    Vector v = Vector((double)dx / mag, (double)dy / mag, (double)dz / mag);  
+    Vector v = Vector((float)dx / mag, (float)dy / mag, (float)dz / mag);  
     v.mag = 1;
     return v;
 }
-double Vector::dotProduct(Vector v){
+float Vector::dotProduct(Vector v){
     return dx * v.dx + dy * v.dy + dz * v.dz; 
 }
 
@@ -150,7 +150,7 @@ Vector Vector::negative(){
 }
 
 //multiply this vector by scalar
-Vector Vector :: operator*(double a){
+Vector Vector :: operator*(float a){
    return Vector(a*dx, a*dy, a*dz); 
 }
 
@@ -179,12 +179,12 @@ Vector Vector::crossProduct(Vector v){
 // Light functions
 //****************************************************
  	
-	void Light::initPos(double nx, double ny, double nz) {
+	void Light::initPos(float nx, float ny, float nz) {
 		x = nx;
 		y = ny;
 		z = nz;
 	}
-	void Light::initRGB(double nr, double ng, double nb) {
+	void Light::initRGB(float nr, float ng, float nb) {
 		r = nr;
 		g = ng;
 		b = nb;
@@ -209,7 +209,7 @@ Color Color::operator*(Color color){
     return Color(r * color.r, g * color.g, b * color.b); 
 }
 //overload to allow scalar multiplication
-Color Color::operator*(double a){
+Color Color::operator*(float a){
     return Color(r * a, g * a, b * a); 
 }
 
@@ -223,7 +223,7 @@ Color Color::clone(){
 
 //default constructor makes identity matrix
 Matrix::Matrix(){
-    m =  vector<vector<double> >(4, vector<double>(4,0));
+    m =  vector<vector<float> >(4, vector<float>(4,0));
     m[0][0] = 1;   
     m[1][1] = 1;  
     m[2][2] = 1;  
@@ -234,9 +234,9 @@ Matrix::Matrix(){
 
 //Create a 4x4 Matrix. t: translation, r: rotate, s: scale
 //Store Matrix in row major form. 
-Matrix::Matrix(char type, double x, double y, double z, double angle = 0){
+Matrix::Matrix(char type, float x, float y, float z, float angle = 0){
 	
-    m = vector<vector<double> >(4, vector<double>(4,0));
+    m = vector<vector<float> >(4, vector<float>(4,0));
     
     if(type == 't'){ 
 		m[0][0] = 1;   
@@ -252,21 +252,9 @@ Matrix::Matrix(char type, double x, double y, double z, double angle = 0){
     else if(type == 'r'){
         Vector n = Vector(x, y, z).normalize();
         x = n.dx, y = n.dy, z = n.dz; 
-        double c = cos(angle); 
-        double s = sin(angle); 
-        
-        /*m[0][0] = x * x * (1 - c) + c;
-        m[0][1] = x * y * (1 - c) + z * s;
-        m[0][2] = x * z * (1 - c) + y * s; 
-    
-        m[1][0] = y * z * (1 - c) + z * s;
-        m[1][1] = y * y * (1 - c) + c;
-        m[1][2] = y * z * (1 - c) - x * s; 
- 
-        m[2][0] = z * x * (1 - c) - y * s; 
-        m[2][1] = z * y * (1 - c) + x * s;
-        m[2][2] = z * z * (1 -c ) + c;*/
-        
+        float c = cos(angle); 
+        float s = sin(angle); 
+       
         m[0][0] = x * x * (1 - c) + c;
         m[0][1] = x * y * (1 - c) + z * s;
         m[0][2] = x * z * (1 - c) - y * s; 
@@ -293,7 +281,7 @@ Matrix::Matrix(char type, double x, double y, double z, double angle = 0){
 // Naive Matrix Multiplication;  O(n^3).  Order matters!!! M*B != B*M
 Matrix Matrix::operator*(Matrix B){
 	Matrix C;
-	double sum;
+	float sum;
     for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {
 			sum = 0;
@@ -309,8 +297,8 @@ Matrix Matrix::operator*(Matrix B){
 }
 
 Point Matrix::operator*(Point p){
-	vector<double> c = vector<double>(4,0);
-	vector<double> pv = vector<double>(4,1);
+	vector<float> c = vector<float>(4,0);
+	vector<float> pv = vector<float>(4,1);
 	pv[0] = p.x;
 	pv[1] = p.y;
 	pv[2] = p.z;
@@ -324,8 +312,8 @@ Point Matrix::operator*(Point p){
 	return Point(c[0], c[1], c[2]);
 }
 Vector Matrix::operator*(Vector v){
-	vector<double> c = vector<double>(4,0);
-	vector<double> pv = vector<double>(4,0);
+	vector<float> c = vector<float>(4,0);
+	vector<float> pv = vector<float>(4,0);
 	pv[0] = v.dx;
 	pv[1] = v.dy;
 	pv[2] = v.dz;
@@ -361,23 +349,23 @@ Vector Matrix :: vectorTimesM(Vector v){
 Matrix Matrix::invert() {
 	Matrix inv;
 	
-	double s0 = m[0][0] * m[1][1] - m[1][0] * m[0][1];
-    double s1 = m[0][0] * m[1][2] - m[1][0] * m[0][2];
-    double s2 = m[0][0] * m[1][3] - m[1][0] * m[0][3];
-    double s3 = m[0][1] * m[1][2] - m[1][1] * m[0][2];
-    double s4 = m[0][1] * m[1][3] - m[1][1] * m[0][3];
-    double s5 = m[0][2] * m[1][3] - m[1][2] * m[0][3];
+	float s0 = m[0][0] * m[1][1] - m[1][0] * m[0][1];
+    float s1 = m[0][0] * m[1][2] - m[1][0] * m[0][2];
+    float s2 = m[0][0] * m[1][3] - m[1][0] * m[0][3];
+    float s3 = m[0][1] * m[1][2] - m[1][1] * m[0][2];
+    float s4 = m[0][1] * m[1][3] - m[1][1] * m[0][3];
+    float s5 = m[0][2] * m[1][3] - m[1][2] * m[0][3];
     
-    double c5 = m[2][2] * m[3][3] - m[3][2] * m[2][3];
-    double c4 = m[2][1] * m[3][3] - m[3][1] * m[2][3];
-    double c3 = m[2][1] * m[3][2] - m[3][1] * m[2][2];
-    double c2 = m[2][0] * m[3][3] - m[3][0] * m[2][3];
-    double c1 = m[2][0] * m[3][2] - m[3][0] * m[2][2];
-    double c0 = m[2][0] * m[3][1] - m[3][0] * m[2][1];
+    float c5 = m[2][2] * m[3][3] - m[3][2] * m[2][3];
+    float c4 = m[2][1] * m[3][3] - m[3][1] * m[2][3];
+    float c3 = m[2][1] * m[3][2] - m[3][1] * m[2][2];
+    float c2 = m[2][0] * m[3][3] - m[3][0] * m[2][3];
+    float c1 = m[2][0] * m[3][2] - m[3][0] * m[2][2];
+    float c0 = m[2][0] * m[3][1] - m[3][0] * m[2][1];
 	
 	
-    double det = s0*c5 - s1*c4 + s2*c3 + s3*c2 - s4*c1 + s5*c0;
-    double invdet = 1.0 / det;
+    float det = s0*c5 - s1*c4 + s2*c3 + s3*c2 - s4*c1 + s5*c0;
+    float invdet = 1.0 / det;
 
     inv.m[0][0] = ( m[1][1] * c5 - m[1][2] * c4 + m[1][3] * c3) * invdet;
     inv.m[0][1] = (-m[0][1] * c5 + m[0][2] * c4 - m[0][3] * c3) * invdet;

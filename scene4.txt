@@ -1,0 +1,7 @@
+ ---Loading from file 'ref/scene4-specular.test'
+ ---NOT using AABB
+Time 8.303081
+
+::: To img.png File :::
+    scene4-specular.bmpnormal.png file successfully written.
+ ---Ray Tracer finished

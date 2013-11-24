@@ -19,6 +19,7 @@ parsedScene loadScene(std::string file) {
   //store variables and set stuff at the end
   parsedScene S;
   S.outputFileName = "output.png";
+  vector<Triangle> triangles = vector<Triangle>(); 
   
 
   std::ifstream inpfile(file.c_str());
@@ -94,9 +95,9 @@ parsedScene loadScene(std::string file) {
       //sphere x y z radius
       //  Deﬁnes a sphere with a given position and radius.
       else if(!splitline[0].compare("sphere")) {
-		    Point p = Point(atof(splitline[1].c_str()),
-						    atof(splitline[2].c_str()),
-						    atof(splitline[3].c_str()));
+		    //Point p = Point(atof(splitline[1].c_str()),
+			//			    atof(splitline[2].c_str()),
+			//			    atof(splitline[3].c_str()));
 						    
 			/*Matrix pr = stack.product.clone();
 			Matrix translation;
@@ -105,19 +106,21 @@ parsedScene loadScene(std::string file) {
 			translation.m[2][3] = pr.m[2][3];
 			translation.m[3][3] = pr.m[3][3];
 			*/
-			p = stack.productT * p;  // translate center point
+			//p = stack.productT * p;  // translate center point
 			//pr.m[0][3] = 0;   // undo the transformation for the input matrix
 			//pr.m[1][3] = 0;
 			//pr.m[2][3] = 0;
 			
-		    Sphere* sp = new Sphere(/*stack.product * */p,
+		    /*
+              Sphere* sp = new Sphere(p,
 									atof(splitline[4].c_str()),
 									stack.productR,
 									stack.productR.invert(),
 									stack.productS,
 									stack.productS.invert());
 		    (*sp).brdf = brdf.clone();
-		    S.shapes.allShapes.push_back(sp); //push the pointer onto it
+		    S.shapes.allShapes.push_back(sp);*/
+             //push the pointer onto it
 
         // Create new sphere:
         //   Store 4 numbers
@@ -173,7 +176,8 @@ parsedScene loadScene(std::string file) {
 									  stack.product * vertices[atof(splitline[3].c_str())],
 									  stack.productR/* * stack.productS.invert()*/);
 		  (*tr).brdf = brdf.clone();
-		  S.shapes.allShapes.push_back(tr);
+          triangles.push_back(*tr); 
+          S.shapes.allShapes.push_back(tr);
         // v1: atof(splitline[1].c_str())
         // v2: atof(splitline[2].c_str())
         // v3: atof(splitline[3].c_str())
@@ -336,9 +340,10 @@ parsedScene loadScene(std::string file) {
 
     inpfile.close();
     
-
+    ShapeList* sl = &(S.shapes); 
     //cout << "light x" << S.lights[0].x << ", " <<  S.lights[1].x << endl;
-     S.root = AABB_Node(S.shapes, 0); //sort shapes into AABB tree
+     S.root = AABB_Node(&triangles, 0); //sort shapes into AABB tree
+     //size of shapelist is correct, but changes when passed to AABB!!!!!!!!!!!
     return S;
   }
   throw 5;

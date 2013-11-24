@@ -31,14 +31,18 @@ BRDF BRDF::clone(){
     return n;
 }
 
+BoundingBox::BoundingBox(){
+      min_x = 0, max_x = 0, min_y = 0, max_y = 0, min_z = 0, max_z = 0; 
+}
+
 BoundingBox::BoundingBox(float minx, float maxx, float miny, float maxy, float minz, float maxz){
     min_x = minx, max_x = maxx, min_y = miny, max_y = maxy, min_z = minz, max_z = maxz; 
 }
 
 int BoundingBox::getLongestAxis(){
-    float xd = max_x - min_x; 
-    float yd = max_y - min_y;
-    float zd = max_z - min_z;
+    float xd = abs(max_x - min_x); 
+    float yd = abs(max_y - min_y);
+    float zd = abs(max_z - min_z);
     float m = max(xd, max(yd, zd));
     if(m == xd)
         return X_AXIS;
@@ -51,15 +55,15 @@ int BoundingBox::getLongestAxis(){
 float BoundingBox::getMidPoint(int axis){
     if(axis == X_AXIS){
         
-        return (max_x - min_x)/2; 
+        return (max_x + min_x)/2; 
     }
     if(axis == Y_AXIS){
         
-        return (max_y - min_y)/2;  
+        return (max_y + min_y)/2;  
     }
     else{
         
-         return (max_z - min_z)/2; 
+         return (max_z + min_z)/2; 
     }
     
 }
@@ -131,23 +135,23 @@ BoundingBox Sphere::getBB(){
 }
 
     
-bool Sphere::getIntersect(Ray rayinp, double* t){
+bool Sphere::getIntersect(Ray rayinp, float* t){
 	Ray ray = invertTrans * rayinp;
 
     Vector AC = ray.origin.subtract(invertTrans * center); 
-    double temp1 = pow(AC.dotProduct(ray.direction), 2); 
-    double temp2 = AC.dotProduct(AC) - pow(radius, 2); 
-    double vdot = ray.direction.dotProduct(ray.direction);
+    float temp1 = pow(AC.dotProduct(ray.direction), 2); 
+    float temp2 = AC.dotProduct(AC) - pow(radius, 2); 
+    float vdot = ray.direction.dotProduct(ray.direction);
     temp2 *= vdot;
 	//
     if (temp1 - temp2 < 0)
         return false; 
     else {
-		double temp3 = -2 * (AC.dotProduct(ray.direction)); 
+		float temp3 = -2 * (AC.dotProduct(ray.direction)); 
 		temp1 *= 4;
 		temp2 *= 4;
 
-		double soln = min(temp3 + sqrt(temp1 - temp2), temp3 - sqrt(temp1 - temp2)) / (2.0 * vdot);
+		float soln = min(temp3 + sqrt(temp1 - temp2), temp3 - sqrt(temp1 - temp2)) / (2.0 * vdot);
 		*t = soln; // soln is distance in object space 
 		
 		//Point po = ray.origin + (ray.direction * soln);
@@ -178,9 +182,9 @@ bool Sphere::getIntersect(Ray rayinp){
 	//ray.direction.normalize();
 	
     Vector AC = ray.origin.subtract(invertTrans * center); 
-    double temp1 = pow(AC.dotProduct(ray.direction), 2); 
-    double temp2 = AC.dotProduct(AC) - pow(radius, 2); 
-    double vdot = ray.direction.dotProduct(ray.direction);
+    float temp1 = pow(AC.dotProduct(ray.direction), 2); 
+    float temp2 = AC.dotProduct(AC) - pow(radius, 2); 
+    float vdot = ray.direction.dotProduct(ray.direction);
     temp2 *= vdot;
     if (temp1 - temp2 < 0)
         return false; 
@@ -207,16 +211,13 @@ Triangle::Triangle(Point v_1, Point v_2, Point v_3, Matrix m){
 BoundingBox Triangle::getBB(){
     //don't return bounding box with 0 volume
     
-   float xmin = min(min(v1.x, v2.x), v2.x);
-   float xmax = max(max(v1.x, v2.x), v2.x);
-   float ymin = min(min(v1.y, v2.y), v2.y);
-   float ymax = max(max(v1.y, v2.y), v2.y);
-   float zmin = min(min(v1.z, v2.z), v2.z);
-   float zmax = max(max(v1.z, v2.z), v2.z);
+   float xmin = min(min(v1.x, v2.x), v3.x);
+   float xmax = max(max(v1.x, v2.x), v3.x);
+   float ymin = min(min(v1.y, v2.y), v3.y);
+   float ymax = max(max(v1.y, v2.y), v3.y);
+   float zmin = min(min(v1.z, v2.z), v3.z);
+   float zmax = max(max(v1.z, v2.z), v3.z);
    
-   if (xmin == xmax) xmax += 1;
-   if (ymin == ymax) ymax += 1;
-   if (zmin == zmax) zmax += 1;
     
     return BoundingBox(xmin, xmax,
                        ymin, ymax,
@@ -235,24 +236,24 @@ Vector Triangle::getNormal(Point p){
 }
 
 
-bool Triangle::getIntersect(Ray ray, double* t){ 
+bool Triangle::getIntersect(Ray ray, float* t){ 
    Vector u = v1 - v3;
    Vector v = v2 - v3; 
    Vector N = u.crossProduct(v).normalize(); 
 
    if (N.dotProduct(ray.direction) == 0)
         return false; 
-   double d = N.dotProduct(Vector(v1.x, v1.y, v1.z));  
-   double soln = (d - (N.dotProduct(Vector(ray.origin.x, ray.origin.y, ray.origin.z)))) / N.dotProduct(ray.direction); 
+   float d = N.dotProduct(Vector(v1.x, v1.y, v1.z));  
+   float soln = (d - (N.dotProduct(Vector(ray.origin.x, ray.origin.y, ray.origin.z)))) / N.dotProduct(ray.direction); 
    if (soln < 0 )
         return false; 
    Point interpt =  Point(ray.origin.x + soln * ray.direction.dx, 
                     ray.origin.y + soln * ray.direction.dy,
                     ray.origin.z + soln * ray.direction.dz);
 
-   double surf3 = (v3 - v2).crossProduct(interpt - v2).dotProduct(N); 
-   double surf2 = (v2 - v1).crossProduct(interpt - v1).dotProduct(N); 
-   double surf1 = (v1 - v3).crossProduct(interpt - v3).dotProduct(N); 
+   float surf3 = (v3 - v2).crossProduct(interpt - v2).dotProduct(N); 
+   float surf2 = (v2 - v1).crossProduct(interpt - v1).dotProduct(N); 
+   float surf1 = (v1 - v3).crossProduct(interpt - v3).dotProduct(N); 
    if(surf3 >= 0 && surf2 >= 0 && surf1 >= 0){ //intersection point inside all the edges of triangle
        *t = soln; 
        return true;
@@ -265,8 +266,12 @@ bool Triangle::getIntersect(Ray ray, double* t){
 
 bool Triangle::getIntersect(Ray ray){ //used algorithm from http://geomalgorithms.com/a06-_intersect-2.html
 
-	double t; 
+	float t; 
 	return getIntersect(ray,  &t);    
+}
+
+ShapeList::ShapeList(){
+    allShapes = vector<Shape *> ();  
 }
 
 ShapeList::ShapeList(vector<Shape*> shapes){
@@ -275,9 +280,9 @@ ShapeList::ShapeList(vector<Shape*> shapes){
 
 //find the closest shape the ray interects (FOR POSITIVE T), and at which point
 //return false if no intersection
-bool ShapeList::checkIntersect(Ray ray, Point* p, Shape*& sh, double tmax){
-    double t = -1;
-    double min = LARGE_NUM; 
+bool ShapeList::checkIntersect(Ray ray, Point* p, Shape*& sh, float tmax){
+    float t = -1;
+    float min = LARGE_NUM; 
     for(int i = 0; i < allShapes.size(); i++){
         allShapes[i]->getIntersect(ray, &t); 
         if (t < min && t > 0){
@@ -293,8 +298,8 @@ bool ShapeList::checkIntersect(Ray ray, Point* p, Shape*& sh, double tmax){
 
     return true; 
 }
-bool ShapeList::checkIntersect(Ray ray, double tmax){
-    double t = -1;
+bool ShapeList::checkIntersect(Ray ray, float tmax){
+    float t = -1;
     Shape* closest; 
     for(int i = 0; i < allShapes.size(); i++){
        allShapes[i]->getIntersect(ray, &t);
@@ -326,6 +331,9 @@ BoundingBox ShapeList::getRootBox(){
 }
 
 bool BoundingBox::intersect(Ray r){ 
+    if (!this) return false;  //how are you getting a null BB???
+    
+    
     float xmin = 0, xmax = 0, ymin = 0, ymax = 0, zmin = 0, zmax = 0; 
     float xd = r.direction.dx;
     if (xd == 0) xd = 0.00001;
@@ -339,7 +347,7 @@ bool BoundingBox::intersect(Ray r){
     float a_x = 1 / xd;
     if(a_x >= 0){
         xmin = a_x * (min_x - r.origin.x);
-        xmax = a_x * (max_x - r.origin.x); 
+        xmax = a_x * (max_x - r.origin.x);   //cannot access memory at max_x
     }
     else{
         xmin = a_x * (max_x - r.origin.x);
@@ -384,76 +392,129 @@ bool BoundingBox::intersect(Ray r){
    
    
 }
+BoundingBox getBB(vector<Triangle>* tris){
+    float minx, miny, minz, maxx, maxy, maxz;  
+    minx  = miny = minz = LARGE_NUM; 
+    maxx = maxy = maxz = -LARGE_NUM; 
+    BoundingBox bb = BoundingBox(); 
+    
+    for(int i = 0; i < tris->size(); i++){
+        bb = tris->at(i).getBB(); 
+        minx = fmin(bb.min_x, minx);
+        miny = fmin(bb.min_y, miny);
+        minz = fmin(bb.min_z, minz);
+        
+        maxx = fmax(bb.max_x, maxx);
+        maxy = fmax(bb.max_y, maxy);
+        maxz = fmax(bb.max_z, maxz);
+    }
+    
+    return BoundingBox(minx, maxx, miny, maxy, minz, maxz); 
+    
+}
+//simple method for intersection, just need to know if it intersects or not
+bool checkTriIntersect(vector<Triangle>* tris, Ray ray, float* tmax){
+   float t = -1;
+    for(int i = 0; i < tris->size(); i++){
+       tris->at(i).getIntersect(ray, &t);
+       if (t > 0 && t < *tmax) //there is an intersection 
+       {
+            *tmax = t; 
+            return true; 
+        }
+    }
+    
+    return false; 
+}
+//more detailed intersection test, also gives point of intersection
+float checkTriIntersect(vector<Triangle>* tris, Ray ray, Triangle* tr, float* tmax){
+    float t = -1;
+    float min = *tmax; 
+    for(int i = 0; i < tris->size(); i++){
+        tris->at(i).getIntersect(ray, &t); 
+        if (t > 0 && t < min){
+            min = t;
+            *tr = tris->at(i);  
+        }
+    }
+    if(min == LARGE_NUM || min > *tmax) //no intersection
+        return NO_INTERSECTION; 
+    *tmax = min; 
+    return min; 
+
+    
+}
+
+
+
 
 //make tree by passing in allshapes to get root
 //adapted from http://www.flipcode.com/archives/Dirtypunks_Column-Issue_05_AABB_Trees_Back_To_Playing_With_Blocks.shtml
-AABB_Node::AABB_Node(ShapeList sl, int depth){ 
-    
-    
-    bb = sl.getRootBox(); 
-    
-    if(depth < 2){
-        
+AABB_Node::AABB_Node(vector<Triangle>* tris, int depth){ 
+
+    bb = getBB(tris); 
+     if(tris->size() >  3 && depth < 2){ 
         int axis = bb.getLongestAxis(); 
-        Shape* s; 
-        ShapeList shapeBucket[2]; 
-        
+        vector<Triangle> left = vector<Triangle>(); 
+        vector<Triangle> right = vector<Triangle>(); 
+     
         float mid = bb.getMidPoint(axis); 
         //divide this bb by midpoint along longest axis, sort objects
-        for(int i = 0; i < sl.allShapes.size(); i++){
-            if(sl.allShapes[i]->getBB().getMidPoint(axis) < mid)
-                shapeBucket[0].allShapes.push_back(sl.allShapes[i]);
+        for(int i = 0; i < tris->size(); i++){
+            if(tris->at(i).getBB().getMidPoint(axis) < mid)
+                left.push_back(tris->at(i));
             else
-                shapeBucket[1].allShapes.push_back(sl.allShapes[i]); 
+                right.push_back(tris->at(i)); 
         }
+        if(left.size() > 0){
+           if(left.size() == tris->size()) children[0] = new AABB_Node(&left, depth + 1); 
+           else children[0] = new AABB_Node(&left, depth);   
+        } 
+        else children[0] = 0; 
+        if(right.size() > 0){
+            if(right.size() == tris->size()) children[1] = new AABB_Node(&right, depth + 1); 
+            else children[1] = new AABB_Node(&right, depth); 
+        } 
+        else children[1] = 0; 
         
-        children[0] = new AABB_Node(shapeBucket[0], depth + 1);
-        children[1] = new AABB_Node(shapeBucket[1], depth + 1); 
     }
     else{ //make leaf node 
         children[0] = 0; 
-        containedShapes = sl; 
-        
-        
+        children[1] = 0; 
     }
+    containedTriangles = *tris; 
     
 }
 //simpler test, don't need to know where ray intersects with shapes
-bool AABB_Node::CollisionTest(Ray ray, float limit){
+bool AABB_Node::CollisionTest(Ray ray, float* limit){
      if(!bb.intersect(ray)){
         return false; 
     }
 
-        if(children[0]){
-            if(children[0]->CollisionTest(ray, limit))
+       if(children[0] || children[1]){
+            if(children[0] && children[0]->CollisionTest(ray, limit))
                 return true;
-            if(children[1]->CollisionTest(ray, limit))
+            if(children[1] && children[1]->CollisionTest(ray, limit))
                 return true; 
             return false; 
-        
         }
-        //do intersection with shapes at this node 
-        return containedShapes.checkIntersect(ray, limit); 
     
-    return false; 
+        
+        //do intersection with shapes at this node 
+    return checkTriIntersect(&containedTriangles, ray, limit); 
+    
+    
     
 }
-
-bool AABB_Node::CollisionTest(Ray ray, Point* p, Shape*& sh, float limit){
+//return t value for ray, calculate point of intersection with t value
+// if returns 0, no intersection
+float AABB_Node::CollisionTest(Ray ray, Triangle* tri, float* limit){
     if(!bb.intersect(ray)){
-        return false; 
+        return NO_INTERSECTION; 
     }
-
-        if(children[0]){
-            if(children[0]->CollisionTest(ray, p, sh, limit))
-                return true;
-            if(children[1]->CollisionTest(ray, p, sh, limit))
-                return true; 
-            return false; 
+    if(!children[0] && children[1]) return children[1]->CollisionTest(ray, tri, limit);
+    if(!children[1] && children[0]) return children[0]->CollisionTest(ray, tri, limit); 
+    if(children[0] && children[1])  return min(children[0]->CollisionTest(ray, tri, limit), children[1]->CollisionTest(ray, tri, limit)); 
         
-        }
-        //do intersection with shapes at this node 
-        return containedShapes.checkIntersect(ray, p, sh, limit); 
-    
-    return false; 
+    return checkTriIntersect(&containedTriangles, ray, tri, limit); 
 }
